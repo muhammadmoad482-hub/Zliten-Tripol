@@ -1,562 +1,827 @@
-<!DOCTYPE html>  <html lang="ar" dir="rtl">  
-<head>  
-    <meta charset="UTF-8">  
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>Zelten Tripol | زلطن تريبول</title>  
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>  
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>  
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">  
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">  
-    <style>  
-        :root { --primary: #fb8500; --secondary: #219ebc; --dark: #023047; --card: #0d4760; --text: #ffffff; --success: #2a9d8f; --danger: #e63946; --gray: #8eb1c7; --warning: #ffb703; }  
-        * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; outline: none; }  
-        body { background-color: var(--dark); color: var(--text); margin: 0; padding-bottom: 90px; }  
-        .container { padding: 15px; max-width: 600px; margin: auto; }  
-        .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }  
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>زلطن تريبول • Zliten Tripol</title>
+    <!-- Firebase & Fonts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00b4d8;
+            --secondary: #0077b6;
+            --dark: #010a1f;
+            --card: #041433;
+            --text: #ffffff;
+            --success: #2a9d8f;
+            --danger: #e63946;
+            --warning: #ffb703;
+            --gray: #9ca3af;
+        }
+        * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; outline: none; }
+        body { background-color: var(--dark); color: var(--text); margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
-        /* تأثيرات النيون للأزرار */
-        .btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; position: relative; overflow: hidden; }  
-        .btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px rgba(251, 133, 0, 0.4); }
-        .btn:active { transform: scale(0.95); }  
+        /* أزرار */
+        .btn { 
+            width: 100%; padding: 12px; border-radius: 14px; border: none; font-weight: 700; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; 
+            transition: all 0.2s; color: white; background: var(--primary);
+        }
+        .btn:active { transform: scale(0.97); filter: brightness(1.2); }
+        .btn-primary { background: var(--primary); box-shadow: 0 4px 15px rgba(0, 180, 216, 0.3); }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+        .btn-warning { background: var(--warning); color: #000; }
+        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-sm { padding: 8px 14px; font-size: 0.8rem; width: auto; }
+        .btn-icon { background: transparent; border: none; color: var(--text); font-size: 1.2rem; }
+
+        .card { background: var(--card); border-radius: 20px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(0, 180, 216, 0.2); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 12px; border: 1px solid rgba(0, 180, 216, 0.3); background: rgba(0,0,0,0.5); color: white; }
+        label { display: block; margin-top: 8px; font-size: 0.9rem; color: var(--gray); }
         
-        .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 15px rgba(251, 133, 0, 0.3); }  
-        .btn-danger { background: var(--danger); color: #fff; }  
-        .btn-success { background: var(--success); color: #fff; }  
-        .btn-warning { background: var(--warning); color: #000; }  
-        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }  
-        .btn-sm { padding: 8px 12px; font-size: 0.8rem; width: auto; }  
+        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--dark); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--primary); }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #010a1f; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid var(--primary); z-index: 100; }
+        .nav-link { color: #5a7b94; text-decoration: none; font-size: 0.7rem; text-align: center; cursor: pointer; transition: 0.3s; }
+        .nav-link.active { color: var(--primary); transform: translateY(-5px); text-shadow: 0 0 10px var(--primary); }
+        .nav-link i { font-size: 1.4rem; display: block; margin-bottom: 4px; }
         
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; transition: 0.3s; }  
-        input:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(251, 133, 0, 0.2); }
+        .badge { background: var(--danger); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; position: absolute; top: -5px; right: -5px; }
         
-        header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; background: var(--dark); position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1); }  
-        .badge { background: var(--danger); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; position: absolute; top: -5px; right: -5px; border: 1px solid var(--dark); }  
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: #011a27; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000; }  
-        .nav-link { color: var(--gray); text-decoration: none; font-size: 0.7rem; text-align: center; cursor: pointer; transition: 0.3s; }  
-        .nav-link.active { color: var(--primary); transform: translateY(-3px); }  
-        .nav-link i { font-size: 1.3rem; display: block; margin-bottom: 4px; }  
-        .chat-bubble { padding: 12px; border-radius: 15px; margin-bottom: 8px; max-width: 85%; line-height: 1.4; position: relative; }  
-        .chat-me { background: var(--primary); align-self: flex-start; border-bottom-right-radius: 2px; }  
-        .chat-other { background: rgba(255,255,255,0.1); align-self: flex-end; border-bottom-left-radius: 2px; }  
-    </style>  
-</head>  
-<body>  
-<header id="main-header" style="display:none">  
-    <h3 style="margin:0; color:var(--primary)" onclick="navigate('home')"><i class="fas fa-bolt"></i> زلطن تريبول</h3>  
-    <div style="display:flex; gap:15px; align-items:center">  
-        <div style="position:relative; cursor:pointer" onclick="showNotifs()">  
-            <i class="fas fa-bell fa-lg"></i>  
-            <span id="notif-badge" class="badge" style="display:none">0</span>  
-        </div>  
-        <div style="position:relative; cursor:pointer" onclick="navigate('cart')">  
-            <i class="fas fa-shopping-basket fa-lg"></i>  
-            <span class="badge" id="cart-count">0</span>  
-        </div>  
-    </div>  
-</header>  
+        /* مودال */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: var(--card); border: 2px solid var(--primary); width: 90%; max-width: 450px; padding: 20px; border-radius: 24px; max-height: 80vh; overflow-y: auto; }
+        
+        .img-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: 16px; margin-top: 10px; }
+        .rating-stars { color: var(--warning); letter-spacing: 4px; }
+        .store-avatar { width: 70px; height: 70px; border-radius: 20px; object-fit: cover; background: var(--primary); }
+        .product-img { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; }
+        
+        /* محادثة */
+        .chat-bubble { padding: 10px 14px; border-radius: 18px; margin-bottom: 8px; max-width: 80%; word-break: break-word; }
+        .bubble-left { background: var(--primary); align-self: flex-start; border-bottom-right-radius: 4px; }
+        .bubble-right { background: #1e2a47; align-self: flex-end; border-bottom-left-radius: 4px; border: 1px solid #2a3a5c; }
+        .bubble-system { background: transparent; color: var(--gray); align-self: center; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
 
-<div class="container" id="app-content">  
-    <div style="text-align:center; margin-top:100px;">  
-        <i class="fas fa-spinner fa-spin fa-2x" style="color:var(--primary)"></i>  
-        <p>جاري تحميل زلطن تريبول...</p>  
-    </div>  
-</div>  
+<!-- المودال العام -->
+<div class="modal-overlay" id="sys-modal">
+    <div class="modal-content">
+        <h3 id="modal-title" style="margin-top:0; color:var(--primary)"></h3>
+        <div id="modal-body" style="margin-bottom: 15px;"></div>
+        <div id="modal-inputs" style="margin-bottom: 15px;"></div>
+        <div style="display:flex; gap:10px; justify-content:flex-end">
+            <button id="modal-cancel" class="btn btn-danger btn-sm" style="display:none;">إلغاء</button>
+            <button id="modal-ok" class="btn btn-primary btn-sm">حسناً</button>
+        </div>
+    </div>
+</div>
 
-<nav class="bottom-nav" id="main-nav" style="display:none">  
-    <div class="nav-link" id="nav-home" onclick="navigate('home')"><i class="fas fa-home"></i>الرئيسية</div>  
-    <div class="nav-link" id="nav-orders" onclick="navigate('orders')"><i class="fas fa-box"></i>طلباتي</div>  
-    <div class="nav-link" id="nav-mail" onclick="navigate('mail')"><i class="fas fa-comments"></i>مراسلة</div>  
-    <div class="nav-link" id="nav-merchant" onclick="navigate('merchant')"><i class="fas fa-store"></i>متجري</div>  
-    <div class="nav-link" id="nav-dev" onclick="navigate('dev')"><i class="fas fa-shield-alt"></i>المطور</div>  
-</nav>  
+<header id="main-header" style="display:none">
+    <h3 style="margin:0; color:var(--primary); cursor:pointer;" onclick="navigate('home')"><i class="fas fa-bolt"></i> زلطن تريبول</h3>
+    <div style="display:flex; gap:20px; align-items:center;">
+        <div onclick="navigate('mail')" style="position:relative"><i class="fas fa-bell fa-lg"></i><span class="badge" id="notify-badge" style="display:none;">0</span></div>
+        <div onclick="navigate('cart')" style="position:relative"><i class="fas fa-shopping-cart fa-lg"></i><span class="badge" id="cart-count">0</span></div>
+        <i class="fas fa-sign-out-alt" style="color:var(--danger); cursor:pointer;" onclick="logout()"></i>
+    </div>
+</header>
 
-<script>  
-// --- إعدادات قاعدة البيانات ---  
-const firebaseConfig = { databaseURL: "https://zliten-tripol-default-rtdb.firebaseio.com/" };  
-firebase.initializeApp(firebaseConfig);  
-const database = firebase.database();  
-  
-let db = { users: [], stores: [], orders: [], chats: [], ad: "مرحباً بكم في زلطن تريبول!", currentUser: null, cart: [], notifications: [] };  
-let isAppLoaded = false;  
-  
-function sync() {   
-    database.ref('appData').set({  
-        users: db.users || [], stores: db.stores || [], orders: db.orders || [],  
-        chats: db.chats || [], ad: db.ad || "", notifications: db.notifications || []  
-    });  
-}  
-  
-function loadData() {  
-    database.ref('appData').on('value', (snap) => {  
-        const d = snap.val();  
-        if(d) Object.assign(db, d);  
-        updateBadges();  
-        if(!isAppLoaded) { isAppLoaded = true; initApp(); }  
-    });  
-}  
-  
-function updateBadges() {  
-    if(!db.currentUser) return;  
-    document.getElementById('cart-count').innerText = db.cart.length;  
-    const unread = db.notifications.filter(n => n.uId === db.currentUser.id && !n.read).length;  
-    const badge = document.getElementById('notif-badge');
-    badge.innerText = unread;
-    badge.style.display = unread > 0 ? 'block' : 'none';  
-}  
+<div id="app-content" style="padding: 15px; max-width: 600px; margin: auto;">
+    <div style="text-align:center; margin-top:120px;">
+        <i class="fas fa-spinner fa-spin fa-3x" style="color:var(--primary)"></i>
+        <p>جاري الاتصال بقاعدة بيانات زلطن...</p>
+    </div>
+</div>
 
-// نظام التنقل
-function navigate(page, data = null) {  
-    if(!db.currentUser) return renderAuth();  
-    const content = document.getElementById('app-content');  
-    content.innerHTML = ""; window.scrollTo(0,0);  
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));  
-    if(document.getElementById('nav-'+page)) document.getElementById('nav-'+page).classList.add('active');  
-      
-    if(page === 'home') renderHome(content);  
-    else if(page === 'orders') renderOrders(content);  
-    else if(page === 'mail') renderMail(content);  
-    else if(page === 'merchant') renderMerchant(content);  
-    else if(page === 'dev') renderDev(content);  
-    else if(page === 'cart') renderCart(content);  
-    else if(page === 'store') renderStoreView(content, data);  
-}  
+<nav class="bottom-nav" id="main-nav" style="display:none">
+    <div class="nav-link" id="nav-home" onclick="navigate('home')"><i class="fas fa-store"></i>المتاجر</div>
+    <div class="nav-link" id="nav-orders" onclick="navigate('orders')"><i class="fas fa-box"></i>طلباتي</div>
+    <div class="nav-link" id="nav-driver" onclick="navigate('driver')"><i class="fas fa-motorcycle"></i>التوصيل</div>
+    <div class="nav-link" id="nav-dev" onclick="navigate('dev')"><i class="fas fa-shield-alt"></i>معاذ</div>
+</nav>
 
-function renderAuth() {  
-    document.getElementById('app-content').innerHTML = `  
-        <div class="card" style="text-align:center; margin-top:50px">  
-            <i class="fas fa-bolt fa-3x" style="color:var(--primary); margin-bottom:10px"></i>  
-            <h2>زلطن تريبول</h2>  
-            <input id="u-name" placeholder="اسمك الكريم">  
-            <input id="u-pass" type="password" placeholder="كلمة المرور">  
-            <button class="btn btn-primary" onclick="auth()">دخول / تسجيل</button>  
-        </div>  
-    `;  
-}  
+<script>
+// ---------- Firebase ----------
+const firebaseConfig = { databaseURL: "https://zliten-tripol-default-rtdb.firebaseio.com/" };
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
-function auth() {  
-    const n = document.getElementById('u-name').value.trim();  
-    const p = document.getElementById('u-pass').value;  
-    if(!n || !p) return alert("أدخل بياناتك!");  
-    let user = db.users.find(u => u.name === n);  
-    if(user && user.pass !== p) return alert("كلمة السر خاطئة!");   
-    if(!user) { user = { id: 'U'+Date.now(), name: n, pass: p }; db.users.push(user); sync(); }  
-    db.currentUser = user;   
-    localStorage.setItem('zlt_u', JSON.stringify(user));  
-    document.getElementById('main-header').style.display = 'flex';  
-    document.getElementById('main-nav').style.display = 'flex';  
-    navigate('home');  
-}  
+// ---------- البيانات العامة ----------
+let db = {
+    users: [], stores: [], orders: [], chats: [], ad: "أهلاً بكم في زلطن تريبول 🚀",
+    policy: "تطبيق زلطن تريبول غير مسؤول قانونياً عن أي تأخير أو سوء استخدام. استخدامك للتطبيق يعني موافقتك على تحمل كامل المسؤولية."
+};
+let currentUser = null;
+let cart = [];
+let tempImageBase64 = "";
+let currentLocation = null; // { lat, lng }
 
-function renderHome(view) {  
-    // ميزة عشوائية: نصيحة تسوق ذكية
-    const tips = ["تسوق من متاجر زلطن الموثوقة 🌟", "اطلب الآن واستلم في وقت قياسي 🚚", "دعمك للمتاجر المحلية ينمي مدينتنا ❤️"];
-    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+// ---------- دوال المساعدة ----------
+function sync() { database.ref('appData').set({ users: db.users, stores: db.stores, orders: db.orders, chats: db.chats, ad: db.ad, policy: db.policy }); }
 
-    view.innerHTML = `  
-        <div class="card" style="background:var(--primary); color:white; font-weight:bold">📢 ${db.ad}</div>  
-        <div style="position:relative">  
-            <i class="fas fa-search" style="position:absolute; right:15px; top:22px; color:var(--gray)"></i>  
-            <input id="search-inp" placeholder="ابحث عن متجر في زلطن..." oninput="realtimeSearch(this.value)">  
-        </div>  
-        <div class="card" style="background:rgba(42, 157, 143, 0.1); border:1px dashed var(--success); text-align:center">  
-            <small><i class="fas fa-lightbulb" style="color:var(--warning)"></i> <b>نصيحة:</b> ${randomTip}</small>  
-        </div>  
-        <div class="card" style="background:#023047; border:1px dashed var(--primary); text-align:center">  
-            <small><i class="fas fa-satellite-dish"></i> <b>رادار زلطن:</b> يوجد ${db.orders.filter(o=>o.status!=='مكتمل ✅').length} طلب نشط الآن!</small>  
-        </div>  
-        <h4>المتاجر المعتمدة 🏢</h4>  
-        <div id="stores-list">${renderStoreCards(db.stores.filter(s => s.approved && !s.blocked))}</div>  
-    `;  
-}  
-
-function renderStoreCards(list) {  
-    return list.map(s => `  
-        <div class="card" onclick="navigate('store', '${s.id}')" style="display:flex; gap:15px; align-items:center; cursor:pointer">  
-            <img src="${s.logo}" style="width:60px; height:60px; border-radius:12px; object-fit:cover">  
-            <div style="flex:1">  
-                <h3 style="margin:0">${s.name}</h3>  
-                <small style="color:var(--warning)"><i class="fas fa-star"></i> التقييم: ${s.reviews ? s.reviews.length : 0}</small>  
-            </div>  
-            <i class="fas fa-chevron-left" style="color:var(--primary)"></i>  
-        </div>  
-    `).join('') || '<p style="text-align:center">لا توجد متاجر حالياً</p>';  
-}  
-
-function realtimeSearch(val) {  
-    const filtered = db.stores.filter(s => s.approved && !s.blocked && s.name.toLowerCase().includes(val.toLowerCase()));  
-    document.getElementById('stores-list').innerHTML = renderStoreCards(filtered);  
-}  
-
-function renderStoreView(view, sid) {  
-    const s = db.stores.find(x => x.id === sid);  
-    view.innerHTML = `  
-        <button class="btn btn-outline btn-sm" onclick="navigate('home')"><i class="fas fa-arrow-right"></i> رجوع</button>  
-        <div class="card" style="text-align:center; margin-top:10px">  
-            <img src="${s.logo}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--primary)">  
-            <h2>${s.name}</h2>  
-            <p>${s.desc}</p>  
-            <button class="btn btn-primary btn-sm" style="margin:auto" onclick="openOrderChat('${s.id}')"><i class="fas fa-comment"></i> مراسلة المتجر</button>  
-        </div>  
-        <h4>المنتجات:</h4>  
-        ${(s.products || []).map(p => `  
-            <div class="card ${p.outOfStock ? 'out-of-stock' : ''}" style="display:flex; justify-content:space-between; align-items:center">  
-                <div><b>${p.name}</b><br><span style="color:var(--primary)">${p.price} د.ل</span></div>  
-                ${p.outOfStock ? '<span style="color:var(--danger)">نفذ</span>' : `<button class="btn btn-primary btn-sm" onclick="addToCart('${s.id}','${p.id}','${p.name}',${p.price})">إضافة</button>`}  
-            </div>  
-        `).join('') || '<p>لا توجد منتجات.</p>'}  
-    `;
-}
-
-function addToCart(sid, pid, name, price) {
-    db.cart.push({ sid, pid, name, price });
-    updateBadges(); alert("تمت الإضافة للسلة!");
-}
-
-function renderCart(view) {
-    if(db.cart.length === 0) return view.innerHTML = `<h3>السلة فارغة 🛒</h3><button class="btn btn-primary" onclick="navigate('home')">تسوق الآن</button>`;
-    let total = db.cart.reduce((sum, item) => sum + parseInt(item.price), 0);  
-    view.innerHTML = `  
-        <h3>سلة المشتريات</h3>  
-        ${db.cart.map((c, i) => `<div class="card" style="display:flex; justify-content:space-between"><span>${c.name}</span><b>${c.price} د.ل <i class="fas fa-trash" style="color:var(--danger); cursor:pointer" onclick="db.cart.splice(${i},1); updateBadges(); navigate('cart')"></i></b></div>`).join('')}  
-        <div class="card" style="background:var(--success)">الإجمالي: ${total} د.ل</div>  
-        <div class="card">  
-            <h4>بيانات التوصيل</h4>  
-            <input id="o-phone" type="number" placeholder="رقم هاتفك">  
-            <textarea id="o-loc" placeholder="العنوان في زلطن"></textarea>  
-            <button class="btn btn-primary" onclick="submitOrder()">تأكيد الطلب</button>  
-        </div>  
-    `;
-}
-
-function submitOrder() {
-    const ph = document.getElementById('o-phone').value;
-    const loc = document.getElementById('o-loc').value;
-    if(!ph || !loc) return alert("أكمل البيانات!");
-    const order = { id: 'ZLT'+Date.now(), uId: db.currentUser.id, uName: db.currentUser.name, phone: ph, loc: loc, items: [...db.cart], status: 'قيد المراجعة ⏳', date: new Date().toLocaleTimeString() };
-    db.orders.push(order);
-    db.cart.forEach(item => {  
-        const store = db.stores.find(s => s.id === item.sid);  
-        if(store) addNotif(store.ownerId, `طلب جديد من ${db.currentUser.name}!`);  
-    });  
-    db.cart = []; sync(); alert("تم إرسال طلبك!"); navigate('orders');
-}
-
-function renderOrders(view) {
-    const myOrders = db.orders.filter(o => o.uId === db.currentUser.id).reverse();
-    view.innerHTML = `<h3>طلباتي 📦</h3>` + (myOrders.map(o => `<div class="card"><div style="display:flex; justify-content:space-between"><b>#${o.id.slice(-4)}</b> <span style="color:var(--warning)">${o.status}</span></div><p>${o.items.map(i=>i.name).join(', ')}</p></div>`).join('') || '<p>لا يوجد طلبات</p>');
-}
-
-// --- إصلاح المراسلة ---
-function openOrderChat(sid) {
-    // تحديد معرف المتلقي (سواء كان ID مستخدم أو ID متجر)
-    const target = db.stores.find(s => s.id === sid);
-    const targetId = target ? target.ownerId : sid;
+function showModal(title, content, type = 'alert', onConfirm = null, inputHtml = '') {
+    const modal = document.getElementById('sys-modal');
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('modal-body').innerHTML = content;
+    document.getElementById('modal-inputs').innerHTML = inputHtml;
+    const btnOk = document.getElementById('modal-ok');
+    const btnCancel = document.getElementById('modal-cancel');
+    btnCancel.style.display = (type === 'confirm' || type === 'prompt') ? 'inline-flex' : 'none';
+    modal.style.display = 'flex';
     
-    // إنشاء معرف فريد للمحادثة يضمن الوصول للطرفين
-    const chatId = [db.currentUser.id, targetId].sort().join('_');
-    if(!db.chats.find(c => c.id === chatId)) { db.chats.push({ id: chatId, msgs: [] }); sync(); }
-    openFullChat(chatId);
+    btnOk.onclick = () => {
+        modal.style.display = 'none';
+        let inputVal = null;
+        if (type === 'prompt') { const inp = document.getElementById('modal-input-field'); if(inp) inputVal = inp.value; }
+        if (onConfirm) onConfirm(inputVal);
+    };
+    btnCancel.onclick = () => { modal.style.display = 'none'; };
 }
 
-function renderMail(view) {
-    // البحث عن المحادثات التي يكون المستخدم طرفاً فيها (كراسل أو كتاجر)
-    const myChats = db.chats.filter(c => c.id.includes(db.currentUser.id));
-    view.innerHTML = `<h3>الرسائل 💬</h3>` + (myChats.map(c => {
-        const ids = c.id.split('_');
-        const otherId = ids[0] === db.currentUser.id ? ids[1] : ids[0];
-        // محاولة إيجاد اسم الطرف الآخر (سواء كان متجراً أو مستخدماً)
-        const store = db.stores.find(s => s.ownerId === otherId);
-        const user = db.users.find(u => u.id === otherId);
-        const name = store ? store.name : (user ? user.name : "طرف آخر");
-        return `<div class="card" onclick="openFullChat('${c.id}')" style="cursor:pointer; border-right:4px solid var(--primary)">محادثة مع: <b>${name}</b></div>`;
-    }).join('') || '<p>لا توجد رسائل</p>');
-}
-
-function openFullChat(cid) {
-    const chat = db.chats.find(c => c.id === cid);
-    const view = document.getElementById('app-content');
-    view.innerHTML = `
-        <button class="btn btn-outline btn-sm" onclick="navigate('mail')">عودة</button>
-        <div id="chat-box" class="card" style="height:400px; overflow-y:auto; display:flex; flex-direction:column; margin-top:10px; background:rgba(0,0,0,0.2)">
-            ${(chat.msgs || []).map(m => `<div class="chat-bubble ${m.senderId === db.currentUser.id ? 'chat-me' : 'chat-other'}"><b>${m.sender}:</b> ${m.txt}</div>`).join('')}
-        </div>
-        <div style="display:flex; gap:5px">
-            <input id="m-txt" placeholder="اكتب هنا..." style="margin:0">
-            <button class="btn btn-primary" style="width:80px" onclick="sendMsg('${cid}')"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    `;
-    setTimeout(() => { const b = document.getElementById('chat-box'); if(b) b.scrollTop = b.scrollHeight; }, 100);
-}
-
-function sendMsg(cid) {
-    const t = document.getElementById('m-txt').value;
-    if(!t) return;
-    const chat = db.chats.find(c => c.id === cid);
-    if(!chat.msgs) chat.msgs = [];
-    chat.msgs.push({ senderId: db.currentUser.id, sender: db.currentUser.name, txt: t });
-    const ids = cid.split('_');
-    const otherId = ids[0] === db.currentUser.id ? ids[1] : ids[0];
-    addNotif(otherId, `رسالة من ${db.currentUser.name}`);
-    sync(); openFullChat(cid);
-}
-
-// --- صلاحيات التاجر المتطورة ---
-function renderMerchant(view) {
-    const myStore = db.stores.find(s => s.ownerId === db.currentUser.id);
-    if(!myStore) return view.innerHTML = `<h3>بوابة التجار</h3><div class="card"><button class="btn btn-primary" onclick="reqStore()">فتح متجر جديد</button></div>`;
-    if(!myStore.approved) return view.innerHTML = `<div class="card" style="text-align:center"><h3>طلبك قيد المراجعة من المطور معاذ ⏳</h3></div>`;
-
-    const myOrders = db.orders.filter(o => o.items.some(i => i.sid === myStore.id)).reverse();  
-    view.innerHTML = `  
-        <h3>متجري: ${myStore.name}</h3>
-        <div class="card" style="background:var(--dark)">
-            <h4>إعدادات المتجر</h4>
-            <input id="edit-desc" placeholder="وصف المتجر" value="${myStore.desc}">
-            <button class="btn btn-warning btn-sm" onclick="updateStoreData('${myStore.id}')">تحديث الوصف</button>
-        </div>
-        <div class="card">  
-            <h4>الطلبات الواردة</h4>  
-            ${myOrders.map(o => `  
-                <div style="border-bottom:1px solid rgba(255,255,255,0.1); padding:10px 0">  
-                    <b>👤 ${o.uName}</b> | 📞 ${o.phone} | <span style="color:var(--warning)">${o.status}</span><br>  
-                    📦 ${o.items.filter(i=>i.sid===myStore.id).map(i=>i.name).join(', ')}<br>  
-                    <div style="display:flex; gap:5px; margin-top:8px">
-                        <button class="btn btn-success btn-sm" onclick="updOrder('${o.id}', 'مكتمل ✅')">مكتمل</button>  
-                        <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')"><i class="fas fa-trash"></i> حذف</button>
-                    </div>
-                </div>  
-            `).join('') || '<p>لا توجد طلبات</p>'}  
-        </div>  
-        <div class="card">  
-            <h4>إضافة منتج</h4>  
-            <input type="file" onchange="encodeImg(this)">  
-            <input id="p-name" placeholder="اسم المنتج">  
-            <input id="p-price" type="number" placeholder="السعر">  
-            <button class="btn btn-primary" onclick="addP('${myStore.id}')">حفظ</button>  
-        </div>  
-    `;
-}
-
-function updateStoreData(sid) {
-    db.stores.find(s => s.id === sid).desc = document.getElementById('edit-desc').value;
-    sync(); alert("تم التحديث!");
-}
-
-function deleteOrder(oid) {
-    if(confirm("هل تريد حذف هذا الطلب نهائياً؟")) {
-        db.orders = db.orders.filter(o => o.id !== oid);
-        sync(); navigate('merchant');
-       }
-}
-
-function updOrder(oid, newStatus) {
-    const order = db.orders.find(o => o.id === oid);
-    if(order) {
-        order.status = newStatus;
-        addNotif(order.uId, `تم تحديث طلبك إلى: ${newStatus}`);
-        sync();
-        navigate('merchant');
-    }
-}
-
-function encodeImg(input) {
+function encodeImage(input) {
     const file = input.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) { window.tmpImg = e.target.result; };
+        reader.onloadend = () => { tempImageBase64 = reader.result; };
         reader.readAsDataURL(file);
     }
 }
 
-function addP(sid) {
-    const n = document.getElementById('p-name').value;
-    const p = document.getElementById('p-price').value;
-    if(!n || !p || !window.tmpImg) return alert("يرجى إدخال كافة البيانات والصورة!");
-    
-    const s = db.stores.find(x => x.id === sid);
-    if(s) {
-        if(!s.products) s.products = [];
-        s.products.push({ id: 'P'+Date.now(), name: n, price: p, img: window.tmpImg, outOfStock: false });
-        window.tmpImg = null; 
-        sync(); 
-        alert("تمت إضافة المنتج بنجاح!");
-        navigate('merchant');
-    }
+function addNotification(userId, text, link = '') {
+    const user = db.users.find(u => u.id === userId);
+    if (!user) return;
+    if (!user.notifications) user.notifications = [];
+    user.notifications.unshift({ text, link, date: new Date().toLocaleString(), read: false });
+    sync();
 }
 
-function reqStore() {
+// ---------- تحميل البيانات والمصادقة ----------
+function loadData() {
+    database.ref('appData').on('value', snap => {
+        const data = snap.val();
+        if (data) {
+            db.users = data.users || []; db.stores = data.stores || [];
+            db.orders = data.orders || []; db.chats = data.chats || [];
+            db.ad = data.ad || "أهلاً بكم"; db.policy = data.policy || "";
+            // تأكد من وجود مصفوفة دردشة الطلب في كل طلب قديم
+            db.orders.forEach(o => { if (!o.orderChat) o.orderChat = []; });
+        } else { sync(); }
+        checkAuth();
+    });
+}
+
+function checkAuth() {
+    const savedId = localStorage.getItem('z_user_id');
+    if (savedId && db.users.length) {
+        const user = db.users.find(u => u.id === savedId);
+        if (user) { currentUser = user; updateUI(); return; }
+    }
+    renderAuth();
+}
+
+function logout() {
+    localStorage.removeItem('z_user_id');
+    currentUser = null;
+    document.getElementById('main-header').style.display = 'none';
+    document.getElementById('main-nav').style.display = 'none';
+    renderAuth();
+}
+
+function updateUI() {
+    if (!currentUser) return;
+    document.getElementById('main-header').style.display = 'flex';
+    document.getElementById('main-nav').style.display = 'flex';
+    document.getElementById('cart-count').innerText = cart.length;
+    const unread = (currentUser.notifications || []).filter(n => !n.read).length;
+    const badge = document.getElementById('notify-badge');
+    if (unread > 0) { badge.style.display = 'block'; badge.innerText = unread; } else badge.style.display = 'none';
+    navigate('home');
+}
+
+// ---------- التنقل ----------
+function navigate(page, param = null) {
+    const content = document.getElementById('app-content');
+    content.innerHTML = '';
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    const navItem = document.getElementById(`nav-${page}`);
+    if (navItem) navItem.classList.add('active');
+    
+    if (page === 'home') renderHome(content);
+    else if (page === 'orders') renderOrders(content);
+    else if (page === 'driver') renderDriver(content);
+    else if (page === 'dev') renderDev(content);
+    else if (page === 'cart') renderCart(content);
+    else if (page === 'store') renderStoreView(content, param);
+    else if (page === 'mail') renderMail(content);
+    else if (page === 'chat') renderFullChat(content, param);
+    else if (page === 'policy') showPolicy();
+    else if (page === 'my-store') renderStoreOwnerPanel(content);
+    else if (page === 'track') renderOrderTracking(content, param); // param = orderId
+}
+
+// ---------- المصادقة ----------
+function renderAuth() {
     document.getElementById('app-content').innerHTML = `
-        <button class="btn btn-outline btn-sm" onclick="navigate('merchant')">رجوع</button>
-        <div class="card" style="margin-top:10px">
-            <h4>طلب فتح متجر جديد</h4>
-            <input id="s-name" placeholder="اسم المتجر">
-            <input id="s-desc" placeholder="وصف المتجر (اختياري)">
-            <input type="file" onchange="encodeImg(this)" accept="image/*">
-            <small>صورة لشعار المتجر</small>
-            <button class="btn btn-primary" style="margin-top:10px" onclick="submitStore()">إرسال الطلب للمطور</button>
+        <div class="card" style="margin-top:50px; text-align:center">
+            <h2 style="color:var(--primary)">زلطن تريبول</h2>
+            <p style="font-size:0.9rem">${db.ad}</p>
+            <input id="auth-name" placeholder="الاسم الكامل">
+            <input id="auth-pass" type="password" placeholder="كلمة المرور">
+            <select id="auth-type" style="margin-bottom:10px">
+                <option value="customer">زبون</option>
+                <option value="store_owner">صاحب متجر</option>
+                <option value="driver">سائق توصيل</option>
+            </select>
+            <button class="btn btn-primary" onclick="handleAuth()">دخول / تسجيل</button>
+            <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="showPolicy()">سياسة الاستخدام</button>
         </div>`;
 }
 
-function submitStore() {
-    const n = document.getElementById('s-name').value;
-    const d = document.getElementById('s-desc').value;
-    if(!n || !window.tmpImg) return alert("الرجاء إدخال اسم المتجر وصورة الشعار!");
+function handleAuth() {
+    const name = document.getElementById('auth-name').value.trim();
+    const pass = document.getElementById('auth-pass').value;
+    const type = document.getElementById('auth-type').value;
+    if (!name || !pass) return showModal("تنبيه", "أدخل الاسم وكلمة المرور");
     
-    db.stores.push({ 
-        id: 'S'+Date.now(), 
-        ownerId: db.currentUser.id, 
-        name: n, 
-        desc: d,
-        logo: window.tmpImg, 
-        products: [],
-        approved: false,
-        blocked: false
-    });
-    window.tmpImg = null;
-    sync(); 
-    alert("تم إرسال طلبك إلى المطور معاذ ابوصبيع للمراجعة!"); 
-    navigate('merchant');
-}
-
-// --- لوحة تحكم المطور ---
-function renderDev(view) {
-    view.innerHTML = `
-        <div class="card" style="text-align:center">
-            <h3>تسجيل دخول المطور</h3>
-            <input id="dev-k" type="password" placeholder="رمز الدخول السري">
-            <button class="btn btn-primary" onclick="authDev()">دخول</button>
-        </div>
-    `;
-}
-
-function authDev() {
-    const key = document.getElementById('dev-k').value;
-    if(key === '2026') { 
-        showDevPanel();
-    } else {
-        alert("رمز الدخول خاطئ!");
+    let user = db.users.find(u => u.name === name);
+    if (user && user.pass !== pass) return showModal("خطأ", "كلمة المرور غير صحيحة");
+    if (!user) {
+        user = { id: 'U' + Date.now(), name, pass, type, cashCollected: 0, notifications: [] };
+        db.users.push(user);
+        sync();
     }
+    currentUser = user;
+    localStorage.setItem('z_user_id', user.id);
+    updateUI();
 }
 
-function showDevPanel() {
-    const view = document.getElementById('app-content');
-    const pendingStores = db.stores.filter(s => !s.approved);
-    const activeStores = db.stores.filter(s => s.approved);
-    
-    view.innerHTML = `
-        <div class="card" style="background:var(--dark); text-align:center; border: 1px solid var(--primary)">
-            <h3 style="color:var(--primary)"><i class="fas fa-crown"></i> المطور معاذ ابوصبيع</h3>
-        </div>
-        
-        <div class="card">
-            <h4>الإعلانات العامة 📢</h4>
-            <input id="dev-ad" value="${db.ad}" placeholder="نص الإعلان في الرئيسية">
-            <button class="btn btn-warning btn-sm" onclick="updateAd()">نشر الإعلان</button>
-        </div>
-        
-        <div class="card">
-            <h4>طلبات المتاجر المعلقة (${pendingStores.length})</h4>
-            ${pendingStores.map(s => `
-                <div style="border-bottom:1px solid rgba(255,255,255,0.1); padding:10px 0">
-                    <b>${s.name}</b>
-                    <div style="display:flex; gap:5px; margin-top:5px">
-                        <button class="btn btn-success btn-sm" onclick="approveStore('${s.id}')">موافقة</button>
-                        <button class="btn btn-danger btn-sm" onclick="rejectStore('${s.id}')">رفض وحذف</button>
-                    </div>
-                </div>
-            `).join('') || '<p>لا توجد طلبات معلقة</p>'}
-        </div>
-        
-        <div class="card">
-            <h4>إدارة المتاجر النشطة (${activeStores.length})</h4>
-            ${activeStores.map(s => `
-                <div style="border-bottom:1px solid rgba(255,255,255,0.1); padding:10px 0; display:flex; justify-content:space-between; align-items:center">
-                    <b>${s.name}</b>
-                    <button class="btn ${s.blocked ? 'btn-success' : 'btn-danger'} btn-sm" onclick="toggleBlockStore('${s.id}')">
-                        ${s.blocked ? 'فك الحظر' : 'حظر المتجر'}
-                    </button>
-                </div>
-            `).join('') || '<p>لا توجد متاجر نشطة</p>'}
-        </div>
-    `;
+function showPolicy() {
+    showModal("📜 سياسة الاستخدام", db.policy || "التطبيق غير مسؤول قانونياً عن أي أضرار.");
 }
 
-function updateAd() {
-    db.ad = document.getElementById('dev-ad').value;
-    sync(); alert("تم تحديث الإعلان!"); showDevPanel();
-}
-
-function approveStore(sid) {
-    const store = db.stores.find(s => s.id === sid);
-    if(store) {
-        store.approved = true;
-        addNotif(store.ownerId, `مبروك! تمت الموافقة على متجرك "${store.name}"`);
-        sync(); showDevPanel();
-    }
-}
-
-function rejectStore(sid) {
-    const store = db.stores.find(s => s.id === sid);
-    if(store) {
-        addNotif(store.ownerId, `عذراً، تم رفض طلب متجرك "${store.name}" من قبل المطور.`);
-        db.stores = db.stores.filter(s => s.id !== sid);
-        sync(); showDevPanel();
-    }
-}
-
-function toggleBlockStore(sid) {
-    const store = db.stores.find(s => s.id === sid);
-    if(store) {
-        store.blocked = !store.blocked;
-        sync(); showDevPanel();
-    }
-}
-
-// --- نظام الإشعارات ---
-function addNotif(uId, text) {
-    db.notifications.push({ id: 'N'+Date.now(), uId: uId, text: text, read: false, time: new Date().toLocaleTimeString() });
-}
-
-function showNotifs() {
-    const myNotifs = db.notifications.filter(n => n.uId === db.currentUser.id).reverse();
-    const view = document.getElementById('app-content');
-    
-    // جعل الإشعارات مقروءة بمجرد فتحها
-    myNotifs.forEach(n => n.read = true);
-    sync(); updateBadges();
-    
-    view.innerHTML = `
-        <button class="btn btn-outline btn-sm" onclick="navigate('home')"><i class="fas fa-arrow-right"></i> رجوع للرئيسية</button>
-        <h3 style="margin-top:15px">الإشعارات 🔔</h3>
-        ${myNotifs.map(n => `
-            <div class="card" style="border-right:4px solid var(--primary)">
-                <small style="color:var(--gray)">${n.time}</small>
-                <p style="margin:5px 0">${n.text}</p>
+// ---------- الصفحة الرئيسية (بدون عجلة الحظ) ----------
+function renderHome(container) {
+    let storesHtml = db.stores.map(s => {
+        const avg = s.ratingCount ? (s.ratingSum / s.ratingCount).toFixed(1) : 'جديد';
+        return `
+        <div class="card" onclick="navigate('store', '${s.id}')" style="display:flex; gap:15px; align-items:center; cursor:pointer;">
+            ${s.img ? `<img src="${s.img}" class="store-avatar">` : `<div class="store-avatar" style="display:flex; align-items:center; justify-content:center; font-size:2rem;">🏪</div>`}
+            <div style="flex:1">
+                <b style="font-size:1.1rem">${s.name}</b>
+                <div class="rating-stars">${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))} ${avg}</div>
+                <small style="color:var(--gray)">${s.products?.length || 0} منتج</small>
             </div>
-        `).join('') || '<p>لا توجد إشعارات حالياً</p>'}
-    `;
+            <i class="fas fa-chevron-left" style="color:var(--primary)"></i>
+        </div>`;
+    }).join('');
+    
+    container.innerHTML = `
+        <div class="card" style="background:var(--primary); color:#000; font-weight:bold; text-align:center">📢 ${db.ad}</div>
+        <div style="display:flex; justify-content:space-between; margin:15px 0">
+            <span>مرحباً، <b>${currentUser.name}</b> (${currentUser.type === 'store_owner' ? 'تاجر' : currentUser.type === 'driver' ? 'سائق' : 'زبون'})</span>
+            ${currentUser.type === 'store_owner' ? `<button class="btn btn-sm btn-warning" onclick="navigate('my-store')"><i class="fas fa-store-alt"></i> متجري</button>` : ''}
+        </div>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <button class="btn btn-outline btn-sm" onclick="randomStoreOrProduct()"><i class="fas fa-dice"></i> اقتراح عشوائي</button>
+        </div>
+        <h4 style="border-bottom:2px solid var(--primary); padding-bottom:5px">🏬 المتاجر</h4>
+        <div id="stores-list">${storesHtml || '<p style="text-align:center">لا توجد متاجر بعد</p>'}</div>`;
 }
 
-// --- التهيئة ---
-function initApp() {
-    const savedUser = localStorage.getItem('zlt_u');
-    if(savedUser) {
-        const parsed = JSON.parse(savedUser);
-        const userInDb = db.users.find(u => u.id === parsed.id);
-        if(userInDb) {
-            db.currentUser = userInDb;
-            document.getElementById('main-header').style.display = 'flex';
-            document.getElementById('main-nav').style.display = 'flex';
-            navigate('home');
-            return;
-        }
+function randomStoreOrProduct() {
+    if (!db.stores.length) return showModal("عشوائي", "لا توجد متاجر");
+    const store = db.stores[Math.floor(Math.random() * db.stores.length)];
+    if (store.products?.length) {
+        const prod = store.products[Math.floor(Math.random() * store.products.length)];
+        showModal("🎲 اقتراح اليوم", `<b>${prod.name}</b> من متجر ${store.name}<br>السعر: ${prod.price} د.ل`, 'alert', () => navigate('store', store.id));
+    } else {
+        showModal("🎲", `متجر ${store.name} - لا يحتوي منتجات بعد`, 'alert', () => navigate('store', store.id));
     }
-    navigate('home'); // يوجه لشاشة تسجيل الدخول إذا لم يجد مستخدم محفوظ
 }
 
-// تشغيل جلب البيانات عند بدء التطبيق
-loadData();
+// ---------- عرض المتجر والمنتجات والتقييم ----------
+function renderStoreView(container, storeId) {
+    const store = db.stores.find(s => s.id === storeId);
+    if (!store) return navigate('home');
+    const avg = store.ratingCount ? (store.ratingSum / store.ratingCount).toFixed(1) : '0.0';
+    
+    let productsHtml = (store.products || []).map(p => `
+        <div class="card" style="display:flex; gap:12px; align-items:center">
+            ${p.img ? `<img src="${p.img}" class="product-img">` : `<div class="product-img" style="background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.8rem;">🍕</div>`}
+            <div style="flex:1"><b>${p.name}</b><br><span style="color:var(--success)">${p.price} د.ل</span></div>
+            <button class="btn btn-sm btn-primary" onclick="addToCart('${store.id}', '${p.name}', ${p.price})"><i class="fas fa-cart-plus"></i></button>
+        </div>`).join('') || '<p>لا توجد منتجات حالياً</p>';
+    
+    container.innerHTML = `
+        <button class="btn btn-sm btn-outline" style="margin-bottom:10px" onclick="navigate('home')"><i class="fas fa-arrow-right"></i> عودة</button>
+        <div class="card" style="text-align:center">
+            ${store.img ? `<img src="${store.img}" class="img-preview">` : ''}
+            <h2 style="color:var(--primary)">${store.name}</h2>
+            <div class="rating-stars" style="font-size:1.5rem">${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))} (${avg})</div>
+            <button class="btn btn-sm btn-outline" style="margin:10px auto" onclick="navigate('chat', '${store.ownerId}')"><i class="fas fa-comment"></i> مراسلة المتجر</button>
+            ${currentUser.id !== store.ownerId ? `<button class="btn btn-sm btn-warning" onclick="rateStore('${store.id}')"><i class="fas fa-star"></i> تقييم المتجر</button>` : ''}
+        </div>
+        <h4>📦 المنتجات</h4>
+        ${productsHtml}`;
+}
 
+function rateStore(storeId) {
+    showModal("تقييم المتجر", "اختر تقييمك من 1 إلى 5", "prompt", (val) => {
+        val = parseInt(val);
+        if (val >=1 && val <=5) {
+            const store = db.stores.find(s => s.id === storeId);
+            store.ratingSum = (store.ratingSum || 0) + val;
+            store.ratingCount = (store.ratingCount || 0) + 1;
+            sync();
+            showModal("شكراً", "تم تقييم المتجر بنجاح");
+            navigate('store', storeId);
+        } else showModal("خطأ", "قيمة غير صالحة");
+    }, '<input id="modal-input-field" type="number" min="1" max="5" placeholder="1-5">');
+}
+
+function addToCart(sid, name, price) {
+    cart.push({ sid, name, price });
+    document.getElementById('cart-count').innerText = cart.length;
+    showModal("السلة", `تم إضافة ${name}`);
+}
+
+// ---------- السلة والطلب (مع الموقع الجغرافي) ----------
+function getCurrentLocation(callback) {
+    if (!navigator.geolocation) {
+        showModal("خطأ", "متصفحك لا يدعم تحديد الموقع");
+        return;
+    }
+    showModal("تحديد الموقع", "جاري الحصول على موقعك...");
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            document.getElementById('location-status').innerHTML = `✅ تم تحديد موقعك`;
+            if (callback) callback();
+            document.getElementById('sys-modal').style.display = 'none';
+        },
+        (err) => { showModal("خطأ", "لم نتمكن من الحصول على موقعك، أدخل العنوان يدوياً"); }
+    );
+}
+
+function renderCart(container) {
+    if (!cart.length) return container.innerHTML = `<div style="text-align:center; margin-top:60px"><i class="fas fa-shopping-basket fa-4x" style="color:var(--primary)"></i><h3>السلة فارغة</h3><button class="btn btn-primary" onclick="navigate('home')">تصفح المتاجر</button></div>`;
+    const total = cart.reduce((s, i) => s + i.price, 0);
+    container.innerHTML = `
+        <h3>🛒 سلة المشتريات</h3>
+        ${cart.map((item, idx) => `<div class="card" style="display:flex; justify-content:space-between"><span>${item.name}</span> <span>${item.price} د.ل <i class="fas fa-trash" style="color:var(--danger); margin-right:8px; cursor:pointer" onclick="cart.splice(${idx},1); navigate('cart')"></i></span></div>`).join('')}
+        <div class="card" style="background:var(--success); text-align:center; font-size:1.3rem">الإجمالي: ${total} د.ل</div>
+        <textarea id="order-address" placeholder="موقع التوصيل بالتفصيل (شارع، علامة مميزة)"></textarea>
+        <input id="order-phone" placeholder="رقم الهاتف للتواصل">
+        <div style="display:flex; gap:10px; align-items:center; margin:10px 0">
+            <button class="btn btn-outline btn-sm" style="width:auto;" onclick="getCurrentLocation()"><i class="fas fa-map-marker-alt"></i> تحديد موقعي</button>
+            <span id="location-status" style="color:var(--gray);"></span>
+        </div>
+        <button class="btn btn-primary" onclick="confirmOrder()">🚀 تأكيد الطلب</button>`;
+}
+
+function confirmOrder() {
+    const addr = document.getElementById('order-address')?.value;
+    const phone = document.getElementById('order-phone')?.value;
+    if (!addr || !phone) return showModal("خطأ", "أدخل العنوان ورقم الهاتف");
+    const storeId = cart[0].sid;
+    const order = {
+        id: 'ORD' + Date.now(),
+        userId: currentUser.id, userName: currentUser.name,
+        storeId, items: [...cart], location: addr, phone,
+        status: 'قيد الانتظار ⏳', createdAt: new Date().toLocaleString(),
+        driverId: null,
+        coordinates: currentLocation,
+        orderChat: [] // دردشة الطلب
+    };
+    db.orders.push(order);
+    const store = db.stores.find(s => s.id === storeId);
+    if (store) addNotification(store.ownerId, `طلب جديد من ${currentUser.name}`, '');
+    cart = [];
+    currentLocation = null;
+    sync();
+    showModal("تم", "تم إرسال الطلب بنجاح", 'alert', () => navigate('orders'));
+}
+
+// ---------- الطلبات (زبون) مع تتبع ----------
+function renderOrders(container) {
+    const myOrders = db.orders.filter(o => o.userId === currentUser.id).reverse();
+    container.innerHTML = `<h3>📋 طلباتي</h3>`;
+    if (!myOrders.length) container.innerHTML += '<p>لا توجد طلبات</p>';
+    myOrders.forEach(o => {
+        container.innerHTML += `<div class="card">
+            <b>#${o.id.slice(-6)}</b> - ${o.status}<br><small>${o.createdAt}</small>
+            <div style="margin-top:8px"><button class="btn btn-sm btn-outline" onclick="navigate('track','${o.id}')"><i class="fas fa-map-marked-alt"></i> تتبع الطلب</button></div>
+        </div>`;
+    });
+}
+
+// ---------- لوحة صاحب المتجر ----------
+function renderStoreOwnerPanel(container) {
+    const myStore = db.stores.find(s => s.ownerId === currentUser.id);
+    if (!myStore) {
+        return container.innerHTML = `
+            <div class="card" style="text-align:center">
+                <h3>أنشئ متجرك الآن</h3>
+                <input id="new-store-name" placeholder="اسم المتجر">
+                <label>صورة المتجر (اختياري)</label>
+                <input type="file" onchange="encodeImage(this)" accept="image/*">
+                <button class="btn btn-success" onclick="createMyStore()">إنشاء المتجر</button>
+            </div>`;
+    }
+    
+    const storeOrders = db.orders.filter(o => o.storeId === myStore.id).reverse();
+    let ordersHtml = storeOrders.map(o => `
+        <div class="card">
+            <b>${o.userName}</b> - ${o.status}<br>
+            <small>${o.items.map(i=>i.name).join(', ')}</small><br>
+            <small>📍 ${o.location} | 📞 ${o.phone}</small>
+            ${o.status === 'قيد الانتظار ⏳' ? `<button class="btn btn-sm btn-success" style="margin-top:8px" onclick="acceptOrder('${o.id}')">قبول الطلب</button>` : ''}
+            <button class="btn btn-sm btn-outline" style="margin-top:5px" onclick="navigate('track','${o.id}')"><i class="fas fa-eye"></i> تتبع</button>
+        </div>`).join('');
+    
+    let productsHtml = (myStore.products || []).map(p => `
+        <div class="card" style="display:flex; justify-content:space-between">
+            <span><b>${p.name}</b> - ${p.price} د.ل</span>
+            <i class="fas fa-trash" style="color:var(--danger)" onclick="deleteProduct('${p.id}')"></i>
+        </div>`).join('');
+    
+    container.innerHTML = `
+        <h3>🏪 ${myStore.name}</h3>
+        <button class="btn btn-sm btn-primary" onclick="showAddProductForm('${myStore.id}')"><i class="fas fa-plus"></i> إضافة منتج</button>
+        <h4 style="margin-top:20px">📦 منتجاتي</h4>
+        ${productsHtml || '<p>لا توجد منتجات</p>'}
+        <h4>📥 طلبات المتجر</h4>
+        ${ordersHtml || '<p>لا طلبات بعد</p>'}
+        <button class="btn btn-outline btn-sm" style="margin-top:15px" onclick="navigate('home')">العودة للرئيسية</button>`;
+}
+
+function createMyStore() {
+    const name = document.getElementById('new-store-name').value;
+    if (!name) return showModal("خطأ", "أدخل اسم المتجر");
+    const newStore = {
+        id: 'S' + Date.now(), name, ownerId: currentUser.id,
+        img: tempImageBase64 || '', products: [], ratingSum: 0, ratingCount: 0
+    };
+    db.stores.push(newStore);
+    sync();
+    showModal("تم", "تم إنشاء المتجر", 'alert', () => navigate('my-store'));
+}
+
+function showAddProductForm(storeId) {
+    tempImageBase64 = '';
+    showModal("منتج جديد", "أدخل التفاصيل", "prompt", (val) => {
+        const name = document.getElementById('prod-name')?.value;
+        const price = document.getElementById('prod-price')?.value;
+        if (name && price) {
+            const store = db.stores.find(s => s.id === storeId);
+            store.products.push({ id: 'P'+Date.now(), name, price: parseInt(price), img: tempImageBase64 });
+            sync();
+            navigate('my-store');
+        }
+    }, `<input id="prod-name" placeholder="اسم المنتج"><input id="prod-price" type="number" placeholder="السعر"><input type="file" onchange="encodeImage(this)" accept="image/*">`);
+}
+
+function acceptOrder(orderId) {
+    const order = db.orders.find(o => o.id === orderId);
+    order.status = 'تم القبول ✅ (بانتظار سائق)';
+    addNotification(order.userId, `تم قبول طلبك من المتجر`);
+    sync();
+    navigate('my-store');
+}
+
+function deleteProduct(pid) {
+    const store = db.stores.find(s => s.ownerId === currentUser.id);
+    store.products = store.products.filter(p => p.id !== pid);
+    sync();
+    navigate('my-store');
+}
+
+// ---------- السائق (مع رابط خرائط وتتبع) ----------
+function renderDriver(container) {
+    if (currentUser.type !== 'driver') {
+        return container.innerHTML = `<div class="card" style="text-align:center"><h3>فعّل وضع السائق</h3><button class="btn btn-success" onclick="activateDriver()">تفعيل</button></div>`;
+    }
+    const available = db.orders.filter(o => o.status === 'تم القبول ✅ (بانتظار سائق)' && !o.driverId);
+    const myTasks = db.orders.filter(o => o.driverId === currentUser.id && o.status !== 'تم التسليم ✅');
+    
+    container.innerHTML = `
+        <div class="card" style="background:var(--dark); border-color:var(--success)">
+            <h4>💰 كاش مجمع: ${currentUser.cashCollected || 0} د.ل</h4>
+            <button class="btn btn-sm btn-warning" onclick="resetDriverCash()">تصفير الكاش</button>
+        </div>
+        <h4>🚚 مهامي</h4>
+        ${myTasks.map(o => {
+            let mapLink = '#';
+            if (o.coordinates) {
+                mapLink = `https://www.google.com/maps?q=${o.coordinates.lat},${o.coordinates.lng}`;
+            }
+            return `
+            <div class="card">
+                <b>${o.userName}</b> - ${o.location}<br>
+                <small>📞 ${o.phone}</small>
+                ${o.coordinates ? `<a href="${mapLink}" target="_blank" style="color:var(--primary); display:block; margin:5px 0"><i class="fas fa-map-marked-alt"></i> فتح الموقع في الخرائط</a>` : ''}
+                <button class="btn btn-sm btn-success" onclick="deliverOrder('${o.id}')">تم التسليم واستلام الكاش</button>
+                <button class="btn btn-sm btn-outline" onclick="navigate('track','${o.id}')"><i class="fas fa-comments"></i> تتبع ودردشة</button>
+            </div>`}).join('') || '<p>لا مهام</p>'}
+        <h4>📋 طلبات متاحة</h4>
+        ${available.map(o => `
+            <div class="card">
+                <b>${o.storeId ? db.stores.find(s=>s.id===o.storeId)?.name : ''}</b> - ${o.userName}<br>
+                <small>📍 ${o.location}</small>
+                <button class="btn btn-sm btn-primary" onclick="pickOrderDriver('${o.id}')">استلام</button>
+            </div>`).join('')}`;
+}
+
+function activateDriver() {
+    currentUser.type = 'driver';
+    const userInDb = db.users.find(u => u.id === currentUser.id);
+    userInDb.type = 'driver';
+    sync();
+    navigate('driver');
+}
+
+function pickOrderDriver(oid) {
+    const order = db.orders.find(o => o.id === oid);
+    order.driverId = currentUser.id;
+    order.status = 'جاري التوصيل 🛵';
+    // إضافة رسالة نظام في دردشة الطلب
+    if (!order.orderChat) order.orderChat = [];
+    order.orderChat.push({ sender: 'system', text: `تم تعيين السائق ${currentUser.name} للطلب` });
+    addNotification(order.userId, `السائق ${currentUser.name} في طريقه إليك`);
+    const store = db.stores.find(s => s.id === order.storeId);
+    if (store) addNotification(store.ownerId, `السائق ${currentUser.name} استلم الطلب #${order.id.slice(-6)}`);
+    sync();
+    navigate('driver');
+}
+
+function deliverOrder(oid) {
+    showModal("استلام الكاش", "كم استلمت من الزبون؟", "prompt", (amount) => {
+        amount = parseInt(amount);
+        if (!amount) return;
+        const order = db.orders.find(o => o.id === oid);
+        order.status = 'تم التسليم ✅';
+        currentUser.cashCollected = (currentUser.cashCollected || 0) + amount;
+        const userInDb = db.users.find(u => u.id === currentUser.id);
+        userInDb.cashCollected = currentUser.cashCollected;
+        if (!order.orderChat) order.orderChat = [];
+        order.orderChat.push({ sender: 'system', text: `تم تسليم الطلب واستلام ${amount} د.ل` });
+        addNotification(order.userId, `تم تسليم طلبك. شكراً لاستخدامك زلطن`);
+        const store = db.stores.find(s => s.id === order.storeId);
+        if (store) addNotification(store.ownerId, `تم تسليم الطلب #${order.id.slice(-6)}`);
+        sync();
+        navigate('driver');
+    }, '<input id="modal-input-field" type="number" placeholder="المبلغ">');
+}
+
+function resetDriverCash() {
+    showModal("تأكيد", "تصفير الكاش المجمع؟", "confirm", () => {
+        currentUser.cashCollected = 0;
+        const u = db.users.find(u => u.id === currentUser.id);
+        u.cashCollected = 0;
+        sync();
+        navigate('driver');
+    });
+}
+
+// ---------- تتبع الطلب المشترك (ميزة جديدة تفيد الجميع) ----------
+function renderOrderTracking(container, orderId) {
+    const order = db.orders.find(o => o.id === orderId);
+    if (!order) return navigate('home');
+    // التحقق من أن المستخدم طرف في الطلب (مشتري، بائع، أو سائق)
+    const store = db.stores.find(s => s.id === order.storeId);
+    const isCustomer = order.userId === currentUser.id;
+    const isStoreOwner = store && store.ownerId === currentUser.id;
+    const isDriver = order.driverId === currentUser.id;
+    if (!isCustomer && !isStoreOwner && !isDriver) {
+        return showModal("غير مسموح", "ليس لديك صلاحية عرض هذا الطلب", 'alert', () => navigate('home'));
+    }
+    
+    if (!order.orderChat) order.orderChat = [];
+    
+    const driver = order.driverId ? db.users.find(u => u.id === order.driverId) : null;
+    const mapLink = order.coordinates ? `https://www.google.com/maps?q=${order.coordinates.lat},${order.coordinates.lng}` : '#';
+    
+    let chatHtml = order.orderChat.map(m => {
+        if (m.sender === 'system') return `<div class="chat-bubble bubble-system">${m.text}</div>`;
+        const sender = m.sender === currentUser.id ? 'أنت' : (db.users.find(u=>u.id===m.sender)?.name || 'مستخدم');
+        return `<div class="chat-bubble ${m.sender === currentUser.id ? 'bubble-left' : 'bubble-right'}"><b>${sender}:</b> ${m.text}</div>`;
+    }).join('');
+    
+    container.innerHTML = `
+        <button class="btn btn-sm btn-outline" onclick="history.back()"><i class="fas fa-arrow-right"></i> عودة</button>
+        <div class="card">
+            <h3>تتبع الطلب #${order.id.slice(-6)}</h3>
+            <p><b>الحالة:</b> ${order.status}</p>
+            <p><b>الزبون:</b> ${order.userName} | 📞 ${order.phone}</p>
+            <p><b>العنوان:</b> ${order.location}</p>
+            ${order.coordinates ? `<a href="${mapLink}" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-map-marker-alt"></i> عرض الموقع على الخريطة</a>` : ''}
+            ${driver ? `<p><b>السائق:</b> ${driver.name}</p>` : ''}
+        </div>
+        <div class="card">
+            <h4>💬 دردشة الطلب (مشتركة بين الأطراف)</h4>
+            <div id="track-chat-box" style="height:250px; overflow-y:auto; display:flex; flex-direction:column; padding:8px; background:rgba(0,0,0,0.4); border-radius:12px;">
+                ${chatHtml}
+            </div>
+            <div style="display:flex; gap:8px; margin-top:10px">
+                <input id="track-msg-input" placeholder="اكتب رسالة...">
+                <button class="btn btn-primary btn-sm" onclick="sendTrackMsg('${order.id}')">إرسال</button>
+            </div>
+        </div>`;
+    
+    setTimeout(() => {
+        const box = document.getElementById('track-chat-box');
+        if(box) box.scrollTop = box.scrollHeight;
+    }, 100);
+}
+
+function sendTrackMsg(orderId) {
+    const inp = document.getElementById('track-msg-input');
+    if (!inp.value.trim()) return;
+    const order = db.orders.find(o => o.id === orderId);
+    if (!order.orderChat) order.orderChat = [];
+    order.orderChat.push({ sender: currentUser.id, text: inp.value.trim() });
+    // إشعارات للأطراف الأخرى
+    const store = db.stores.find(s => s.id === order.storeId);
+    if (order.userId !== currentUser.id) addNotification(order.userId, `رسالة جديدة في الطلب #${orderId.slice(-6)}`);
+    if (store && store.ownerId !== currentUser.id) addNotification(store.ownerId, `رسالة جديدة في الطلب #${orderId.slice(-6)}`);
+    if (order.driverId && order.driverId !== currentUser.id) addNotification(order.driverId, `رسالة جديدة في الطلب #${orderId.slice(-6)}`);
+    sync();
+    navigate('track', orderId);
+}
+
+// ---------- البريد ----------
+function renderMail(container) {
+    const notifs = currentUser.notifications || [];
+    const chats = db.chats.filter(c => c.u1 === currentUser.id || c.u2 === currentUser.id);
+    
+    let notifHtml = notifs.map(n => `<div class="card" style="padding:10px; ${n.read ? 'opacity:0.6' : ''}" onclick="markNotifRead('${n.date}')">🔔 ${n.text}<br><small>${n.date}</small></div>`).join('');
+    
+    let chatHtml = chats.map(c => {
+        const otherId = c.u1 === currentUser.id ? c.u2 : c.u1;
+        const other = db.users.find(u => u.id === otherId) || {name: 'مستخدم'};
+        const last = c.msgs[c.msgs.length-1];
+        return `<div class="card" style="display:flex; justify-content:space-between" onclick="navigate('chat','${otherId}')">
+            <div><b>${other.name}</b><br><small>${last.txt.substring(0,20)}</small></div>
+            <i class="fas fa-trash" style="color:var(--danger)" onclick="event.stopPropagation();deleteChat('${c.id}')"></i>
+        </div>`;
+    }).join('');
+    
+    container.innerHTML = `<h3>📬 الإشعارات والرسائل</h3>
+        <button class="btn btn-sm btn-outline" onclick="markAllNotifRead()">تعليم الكل مقروء</button>
+        <h4>الإشعارات</h4>${notifHtml || '<p>لا توجد إشعارات</p>'}
+        <h4>💬 المحادثات</h4>${chatHtml || '<p>لا توجد محادثات</p>'}`;
+}
+
+function markNotifRead(date) {
+    const notif = currentUser.notifications.find(n => n.date === date);
+    if (notif) notif.read = true;
+    const u = db.users.find(u => u.id === currentUser.id);
+    u.notifications = currentUser.notifications;
+    sync();
+    navigate('mail');
+}
+function markAllNotifRead() {
+    currentUser.notifications.forEach(n => n.read = true);
+    sync();
+    navigate('mail');
+}
+
+// ---------- الدردشة الخاصة ----------
+function renderFullChat(container, otherId) {
+    const chatId = [currentUser.id, otherId].sort().join('_');
+    let chat = db.chats.find(c => c.id === chatId);
+    if (!chat) { chat = { id: chatId, u1: currentUser.id, u2: otherId, msgs: [{s:'system', txt:'بداية المحادثة'}] }; db.chats.push(chat); sync(); }
+    const other = db.users.find(u => u.id === otherId) || {name: 'مستخدم'};
+    
+    container.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px">
+            <button class="btn-icon" onclick="navigate('mail')"><i class="fas fa-arrow-right"></i></button>
+            <h4 style="margin:0">${other.name}</h4>
+        </div>
+        <div id="chat-box" style="height:380px; overflow-y:auto; display:flex; flex-direction:column; padding:10px; background:rgba(0,0,0,0.4); border-radius:16px;">
+            ${chat.msgs.map(m => {
+                if (m.s === 'system') return `<div class="chat-bubble bubble-system">${m.txt}</div>`;
+                return `<div class="chat-bubble ${m.s === currentUser.id ? 'bubble-left' : 'bubble-right'}">${m.txt}</div>`;
+            }).join('')}
+        </div>
+        <div style="display:flex; margin-top:10px; gap:8px">
+            <input id="msg-input" placeholder="رسالتك...">
+            <button class="btn btn-primary btn-sm" onclick="sendMsg('${chatId}')">إرسال</button>
+        </div>`;
+    setTimeout(() => { const box = document.getElementById('chat-box'); if(box) box.scrollTop = box.scrollHeight; }, 100);
+}
+
+function sendMsg(cid) {
+    const inp = document.getElementById('msg-input');
+    if (!inp.value) return;
+    const chat = db.chats.find(c => c.id === cid);
+    chat.msgs.push({ s: currentUser.id, txt: inp.value });
+    const otherId = cid.replace(currentUser.id, '').replace('_', '');
+    addNotification(otherId, `رسالة جديدة من ${currentUser.name}`, '');
+    sync();
+    navigate('chat', otherId);
+}
+
+function deleteChat(cid) {
+    showModal("حذف", "حذف المحادثة؟", "confirm", () => {
+        db.chats = db.chats.filter(c => c.id !== cid);
+        sync(); navigate('mail');
+    });
+}
+
+// ---------- المطور معاذ (صلاحيات كاملة + إدارة منتجات) ----------
+function renderDev(container) {
+    container.innerHTML = `
+        <div class="card" style="text-align:center">
+            <i class="fas fa-user-shield fa-3x" style="color:var(--warning)"></i>
+            <h3>المطور معاذ ابوصبيع</h3>
+            <input id="dev-pass" type="password" placeholder="الرمز السري">
+            <button class="btn btn-warning" onclick="checkDevPass()">دخول</button>
+        </div>`;
+}
+function checkDevPass() {
+    if (document.getElementById('dev-pass').value === '2026') renderSuperAdminPanel();
+    else showModal("خطأ", "رمز غير صحيح");
+}
+function renderSuperAdminPanel() {
+    const v = document.getElementById('app-content');
+    let storesOptions = db.stores.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    v.innerHTML = `
+        <div class="card" style="border:2px solid var(--warning)">
+            <h3 style="color:var(--warning)">🛡️ لوحة المطور</h3>
+            <h4>إعلان عام</h4>
+            <input id="new-ad" value="${db.ad}">
+            <button class="btn btn-sm btn-primary" onclick="db.ad=document.getElementById('new-ad').value; sync(); showModal('تم','تم التحديث')">تحديث</button>
+            <h4>سياسة الاستخدام</h4>
+            <textarea id="new-policy">${db.policy}</textarea>
+            <button class="btn btn-sm btn-primary" onclick="db.policy=document.getElementById('new-policy').value; sync()">حفظ</button>
+            <h4>إدارة المتاجر</h4>
+            ${db.stores.map(s => `<div class="card"><b>${s.name}</b> <button class="btn btn-sm btn-danger" onclick="devDeleteStore('${s.id}')">حذف</button></div>`).join('')}
+            <h4>إضافة متجر (لأي شخص)</h4>
+            <input id="dev-s-name" placeholder="اسم المتجر"><input id="dev-s-owner" placeholder="ID المالك">
+            <button class="btn btn-sm btn-success" onclick="devAddStore()">إضافة</button>
+            
+            <h4 style="margin-top:20px">📦 إدارة منتجات المتاجر</h4>
+            <select id="dev-store-select">${storesOptions}</select>
+            <div id="dev-products-list"></div>
+            <button class="btn btn-sm btn-primary" onclick="devShowAddProduct()">➕ إضافة منتج للمتجر المحدد</button>
+        </div>`;
+    devRefreshProductsList();
+}
+function devRefreshProductsList() {
+    const select = document.getElementById('dev-store-select');
+    if (!select) return;
+    const storeId = select.value;
+    const store = db.stores.find(s => s.id === storeId);
+    const listDiv = document.getElementById('dev-products-list');
+    if (store && store.products) {
+        listDiv.innerHTML = store.products.map(p => `
+            <div class="card" style="display:flex; justify-content:space-between; padding:8px;">
+                <span>${p.name} - ${p.price} د.ل</span>
+                <i class="fas fa-trash" style="color:var(--danger); cursor:pointer;" onclick="devDeleteProduct('${storeId}', '${p.id}')"></i>
+            </div>`).join('');
+    } else listDiv.innerHTML = '<p>لا توجد منتجات</p>';
+    select.onchange = devRefreshProductsList;
+}
+function devDeleteProduct(storeId, productId) {
+    const store = db.stores.find(s => s.id === storeId);
+    store.products = store.products.filter(p => p.id !== productId);
+    sync();
+    devRefreshProductsList();
+}
+function devShowAddProduct() {
+    const storeId = document.getElementById('dev-store-select').value;
+    tempImageBase64 = '';
+    showModal("إضافة منتج (مطور)", "أدخل بيانات المنتج", "prompt", () => {
+        const name = document.getElementById('dev-prod-name')?.value;
+        const price = document.getElementById('dev-prod-price')?.value;
+        if (name && price) {
+            const store = db.stores.find(s => s.id === storeId);
+            store.products.push({ id: 'P'+Date.now(), name, price: parseInt(price), img: tempImageBase64 });
+            sync();
+            devRefreshProductsList();
+        }
+    }, `<input id="dev-prod-name" placeholder="اسم المنتج"><input id="dev-prod-price" type="number" placeholder="السعر"><input type="file" onchange="encodeImage(this)" accept="image/*">`);
+}
+function devDeleteStore(sid) {
+    db.stores = db.stores.filter(s => s.id !== sid);
+    sync(); renderSuperAdminPanel();
+}
+function devAddStore() {
+    const name = document.getElementById('dev-s-name').value;
+    const owner = document.getElementById('dev-s-owner').value;
+    if (!name) return;
+    db.stores.push({ id: 'S'+Date.now(), name, ownerId: owner, products: [], ratingSum:0, ratingCount:0 });
+    sync(); renderSuperAdminPanel();
+}
+
+// بدء التطبيق
+loadData();
 </script>
 </body>
 </html>
