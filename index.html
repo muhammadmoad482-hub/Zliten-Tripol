@@ -155,6 +155,10 @@ function addNotification(userId, text, link = '') {
     sync();
 }
 
+function notifyAllDrivers(text) {
+    db.users.filter(u => u.type === 'driver').forEach(d => addNotification(d.id, text));
+}
+
 // ---------- تحميل البيانات ----------
 function loadData() {
     database.ref('appData').on('value', snap => {
@@ -298,7 +302,7 @@ function randomStoreOrProduct() {
     }
 }
 
-// ---------- عرض المتجر (تم إصلاح زر المراسلة) ----------
+// ---------- عرض المتجر ----------
 function renderStoreView(container, storeId) {
     const store = db.stores.find(s => s.id === storeId);
     if (!store) return navigate('home');
@@ -420,7 +424,7 @@ function renderOrders(container) {
     });
 }
 
-// ---------- لوحة صاحب المتجر ----------
+// ---------- لوحة صاحب المتجر (مع حذف المتجر + تعديل منتج) ----------
 function renderStoreOwnerPanel(container) {
     const myStore = db.stores.find(s => s.ownerId === currentUser.id);
     if (!myStore) {
@@ -445,28 +449,64 @@ function renderStoreOwnerPanel(container) {
         </div>`).join('');
     
     let productsHtml = (myStore.products || []).map(p => `
-        <div class="card" style="display:flex; justify-content:space-between">
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center">
             <span><b>${p.name}</b> - ${p.price} د.ل</span>
-            <i class="fas fa-trash" style="color:var(--danger); cursor:pointer;" onclick="deleteProduct('${p.id}')"></i>
+            <div style="display:flex; gap:8px">
+                <i class="fas fa-edit" style="color:var(--warning); cursor:pointer;" onclick="editProduct('${p.id}')"></i>
+                <i class="fas fa-trash" style="color:var(--danger); cursor:pointer;" onclick="deleteProduct('${p.id}')"></i>
+            </div>
         </div>`).join('');
     
     container.innerHTML = `
         <h3>🏪 ${myStore.name}</h3>
-        <button class="btn btn-sm btn-primary" onclick="openAddProductModal('${myStore.id}')"><i class="fas fa-plus"></i> إضافة منتج</button>
-        <h4 style="margin-top:20px">📦 منتجاتي</h4>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px">
+            <button class="btn btn-sm btn-primary" onclick="openAddProductModal('${myStore.id}')"><i class="fas fa-plus"></i> إضافة منتج</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteMyStore()"><i class="fas fa-trash"></i> حذف المتجر</button>
+        </div>
+        <h4>📦 منتجاتي</h4>
         ${productsHtml || '<p>لا توجد منتجات</p>'}
         <h4>📥 طلبات المتجر</h4>
         ${ordersHtml || '<p>لا طلبات بعد</p>'}
         <button class="btn btn-outline btn-sm" style="margin-top:15px" onclick="navigate('home')">العودة للرئيسية</button>`;
 }
 
+function deleteMyStore() {
+    showModal("تأكيد الحذف", "هل أنت متأكد من حذف متجرك نهائياً؟", "confirm", () => {
+        db.stores = db.stores.filter(s => s.ownerId !== currentUser.id);
+        sync();
+        navigate('my-store');
+    });
+}
+
+function editProduct(productId) {
+    const store = db.stores.find(s => s.ownerId === currentUser.id);
+    const product = store.products.find(p => p.id === productId);
+    if (!product) return;
+    tempImageBase64 = product.img || '';
+    showModal("✏️ تعديل المنتج", `
+        <input id="edit-prod-name" value="${product.name}" placeholder="اسم المنتج">
+        <input id="edit-prod-price" type="number" value="${product.price}" placeholder="السعر">
+        <label>صورة جديدة (اختياري)</label>
+        <input type="file" accept="image/*" onchange="encodeImage(this)">
+    `, 'confirm', () => {
+        const newName = document.getElementById('edit-prod-name')?.value;
+        const newPrice = document.getElementById('edit-prod-price')?.value;
+        if (!newName || !newPrice) return showModal("خطأ", "الرجاء إدخال الاسم والسعر");
+        product.name = newName;
+        product.price = parseInt(newPrice);
+        if (tempImageBase64) product.img = tempImageBase64;
+        sync();
+        navigate('my-store');
+    });
+}
+
 function openAddProductModal(storeId) {
     tempImageBase64 = '';
     showModal("➕ إضافة منتج جديد", `
-        <input id="add-prod-name" placeholder="اسم المنتج" class="form-control">
-        <input id="add-prod-price" type="number" placeholder="السعر (د.ل)" class="form-control">
+        <input id="add-prod-name" placeholder="اسم المنتج">
+        <input id="add-prod-price" type="number" placeholder="السعر (د.ل)">
         <label>صورة المنتج (اختياري)</label>
-        <input type="file" id="add-prod-img" accept="image/*" onchange="encodeImage(this)">
+        <input type="file" accept="image/*" onchange="encodeImage(this)">
     `, 'confirm', () => {
         const name = document.getElementById('add-prod-name')?.value;
         const price = document.getElementById('add-prod-price')?.value;
@@ -494,7 +534,8 @@ function createMyStore() {
 function acceptOrder(orderId) {
     const order = db.orders.find(o => o.id === orderId);
     order.status = 'تم القبول ✅ (بانتظار سائق)';
-    addNotification(order.userId, `تم قبول طلبك من المتجر`);
+    addNotification(order.userId, `تم قبول طلبك من المتجر وهو الآن بانتظار سائق`);
+    notifyAllDrivers(`🚀 طلب جديد في منطقتك من ${order.userName}`);
     sync();
     navigate('my-store');
 }
@@ -506,7 +547,7 @@ function deleteProduct(pid) {
     navigate('my-store');
 }
 
-// ---------- السائق ----------
+// ---------- السائق (مع ميزة عشوائية للمناطق الساخنة) ----------
 function renderDriver(container) {
     if (currentUser.type !== 'driver') {
         return container.innerHTML = `<div class="card" style="text-align:center"><h3>فعّل وضع السائق</h3><button class="btn btn-success" onclick="activateDriver()">تفعيل</button></div>`;
@@ -518,6 +559,9 @@ function renderDriver(container) {
         <div class="card" style="background:var(--dark); border-color:var(--success)">
             <h4>💰 كاش مجمع: ${currentUser.cashCollected || 0} د.ل</h4>
             <button class="btn btn-sm btn-warning" onclick="resetDriverCash()">تصفير الكاش</button>
+        </div>
+        <div style="margin-bottom:15px">
+            <button class="btn btn-outline btn-sm" onclick="suggestHotZone()"><i class="fas fa-fire"></i> اقتراح منطقة ساخنة 🔥</button>
         </div>
         <h4>🚚 مهامي</h4>
         ${myTasks.map(o => {
@@ -538,6 +582,14 @@ function renderDriver(container) {
                 <small>📍 ${o.location}</small>
                 <button class="btn btn-sm btn-primary" onclick="pickOrderDriver('${o.id}')">استلام</button>
             </div>`).join('')}`;
+}
+
+function suggestHotZone() {
+    const pending = db.orders.filter(o => o.status === 'تم القبول ✅ (بانتظار سائق)');
+    if (!pending.length) return showModal("لا توجد مناطق ساخنة", "لا توجد طلبات معلقة حالياً");
+    const zones = [...new Set(pending.map(o => o.location.split('،')[0] || o.location))];
+    const hot = zones[Math.floor(Math.random() * zones.length)];
+    showModal("🔥 منطقة ساخنة", `نقترح التوجه إلى: <b>${hot}</b><br>يوجد طلبات في هذه المنطقة`);
 }
 
 function activateDriver() {
@@ -718,7 +770,7 @@ function deleteChat(cid) {
     });
 }
 
-// ---------- المطور (تم إصلاح إضافة المنتج) ----------
+// ---------- المطور (إضافة إرسال إشعارات + تعديل منتج + حذف طلب) ----------
 function renderDev(container) {
     container.innerHTML = `
         <div class="card" style="text-align:center">
@@ -735,6 +787,17 @@ function checkDevPass() {
 function renderSuperAdminPanel() {
     const v = document.getElementById('app-content');
     let storesOptions = db.stores.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    let usersOptions = db.users.map(u => `<option value="${u.id}">${u.name} (${u.type})</option>`).join('');
+    let ordersList = db.orders.slice().reverse().map(o => `
+        <div class="card">
+            <b>#${o.id.slice(-6)}</b> - ${o.status}<br>
+            <small>زبون: ${o.userName} | متجر: ${db.stores.find(s=>s.id===o.storeId)?.name || '?'}</small>
+            <div style="margin-top:8px">
+                <button class="btn btn-sm btn-danger" onclick="devDeleteOrder('${o.id}')">🗑️ حذف الطلب</button>
+            </div>
+        </div>
+    `).join('');
+    
     v.innerHTML = `
         <div class="card" style="border:2px solid var(--warning)">
             <h3 style="color:var(--warning)">🛡️ لوحة المطور</h3>
@@ -744,6 +807,12 @@ function renderSuperAdminPanel() {
             <h4>سياسة الاستخدام</h4>
             <textarea id="new-policy">${db.policy}</textarea>
             <button class="btn btn-sm btn-primary" onclick="db.policy=document.getElementById('new-policy').value; sync()">حفظ</button>
+            
+            <h4>📨 إرسال إشعار لمستخدم</h4>
+            <select id="notify-user">${usersOptions}</select>
+            <input id="notify-text" placeholder="نص الإشعار">
+            <button class="btn btn-sm btn-success" onclick="sendDevNotification()">إرسال الإشعار</button>
+            
             <h4>إدارة المتاجر</h4>
             ${db.stores.map(s => `<div class="card"><b>${s.name}</b> <button class="btn btn-sm btn-danger" onclick="devDeleteStore('${s.id}')">حذف</button></div>`).join('')}
             <h4>إضافة متجر</h4>
@@ -753,8 +822,26 @@ function renderSuperAdminPanel() {
             <select id="dev-store-select">${storesOptions}</select>
             <div id="dev-products-list"></div>
             <button class="btn btn-sm btn-primary" onclick="devShowAddProduct()">➕ إضافة منتج</button>
+            <h4>🗂️ جميع الطلبات</h4>
+            ${ordersList || '<p>لا توجد طلبات</p>'}
         </div>`;
     devRefreshProductsList();
+}
+
+function sendDevNotification() {
+    const userId = document.getElementById('notify-user').value;
+    const text = document.getElementById('notify-text').value;
+    if (!text) return showModal("خطأ", "أدخل نص الإشعار");
+    addNotification(userId, text);
+    showModal("تم", "تم إرسال الإشعار بنجاح");
+}
+
+function devDeleteOrder(orderId) {
+    showModal("حذف طلب", "هل أنت متأكد من حذف هذا الطلب نهائياً؟", "confirm", () => {
+        db.orders = db.orders.filter(o => o.id !== orderId);
+        sync();
+        renderSuperAdminPanel();
+    });
 }
 function devRefreshProductsList() {
     const select = document.getElementById('dev-store-select');
@@ -764,12 +851,37 @@ function devRefreshProductsList() {
     const listDiv = document.getElementById('dev-products-list');
     if (store && store.products) {
         listDiv.innerHTML = store.products.map(p => `
-            <div class="card" style="display:flex; justify-content:space-between; padding:8px;">
+            <div class="card" style="display:flex; justify-content:space-between; align-items:center; padding:8px;">
                 <span>${p.name} - ${p.price} د.ل</span>
-                <i class="fas fa-trash" style="color:var(--danger); cursor:pointer;" onclick="devDeleteProduct('${storeId}', '${p.id}')"></i>
+                <div style="display:flex; gap:8px">
+                    <i class="fas fa-edit" style="color:var(--warning); cursor:pointer;" onclick="devEditProduct('${storeId}', '${p.id}')"></i>
+                    <i class="fas fa-trash" style="color:var(--danger); cursor:pointer;" onclick="devDeleteProduct('${storeId}', '${p.id}')"></i>
+                </div>
             </div>`).join('');
     } else listDiv.innerHTML = '<p>لا توجد منتجات</p>';
     select.onchange = devRefreshProductsList;
+}
+function devEditProduct(storeId, productId) {
+    const store = db.stores.find(s => s.id === storeId);
+    const product = store.products.find(p => p.id === productId);
+    if (!product) return;
+    tempImageBase64 = product.img || '';
+    showModal("✏️ تعديل منتج (مطور)", `
+        <input id="dev-edit-name" value="${product.name}" placeholder="اسم المنتج">
+        <input id="dev-edit-price" type="number" value="${product.price}" placeholder="السعر">
+        <label>صورة جديدة (اختياري)</label>
+        <input type="file" accept="image/*" onchange="encodeImage(this)">
+    `, 'confirm', () => {
+        const newName = document.getElementById('dev-edit-name')?.value;
+        const newPrice = document.getElementById('dev-edit-price')?.value;
+        if (!newName || !newPrice) return showModal("خطأ", "الرجاء إدخال الاسم والسعر");
+        product.name = newName;
+        product.price = parseInt(newPrice);
+        if (tempImageBase64) product.img = tempImageBase64;
+        sync();
+        devRefreshProductsList();
+        showModal("نجاح", "تم تعديل المنتج");
+    });
 }
 function devDeleteProduct(storeId, productId) {
     const store = db.stores.find(s => s.id === storeId);
@@ -780,12 +892,11 @@ function devDeleteProduct(storeId, productId) {
 function devShowAddProduct() {
     const storeId = document.getElementById('dev-store-select').value;
     tempImageBase64 = '';
-    // إنشاء نافذة إدخال مخصصة
     showModal("➕ إضافة منتج (مطور)", `
         <input id="dev-prod-name" placeholder="اسم المنتج">
         <input id="dev-prod-price" type="number" placeholder="السعر">
         <label>صورة المنتج (اختياري)</label>
-        <input type="file" id="dev-prod-img" accept="image/*" onchange="encodeImage(this)">
+        <input type="file" accept="image/*" onchange="encodeImage(this)">
     `, 'confirm', () => {
         const name = document.getElementById('dev-prod-name')?.value;
         const price = document.getElementById('dev-prod-price')?.value;
